@@ -1,9 +1,4 @@
-/*
- * To change this license header, choose License Headers in Project Properties.
- * To change this template file, choose Tools | Templates
- * and open the template in the editor.
- */
-package com.javacodegeeks.example.utils;
+package com.spring.batch;
 
 import java.util.logging.Level;
 import java.util.logging.Logger;
@@ -21,15 +16,20 @@ import org.springframework.context.support.ClassPathXmlApplicationContext;
 
 /**
  *
- * @author lenovo
+ * @author Fahim Fahad
  */
-public class JobLauncherUsingOneConfigFile {
+public class JobLauncher2 {
 
     @SuppressWarnings("resource")
     public static void main(String[] args) throws JobExecutionAlreadyRunningException {
 
+        String[] springConfig
+                = {"context.config.xml",
+                    "job-config.xml"
+                };
+
         ApplicationContext context
-                = new ClassPathXmlApplicationContext("context.config.user.xml");
+                = new ClassPathXmlApplicationContext("context.config.xml");
 
         JobLauncher jobLauncher = (JobLauncher) context.getBean("jobLauncher");
         Job job = (Job) context.getBean("batchJob");

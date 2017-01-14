@@ -22,22 +22,7 @@
 	http://www.springframework.org/schema/task
     http://www.springframework.org/schema/task/spring-task.xsd
     http://www.springframework.org/schema/jdbc 
-	http://www.springframework.org/schema/jdbc/spring-jdbc.xsd">
-	
-    <bean id="jobRepository"
-          class="org.springframework.batch.core.repository.support.JobRepositoryFactoryBean">
-        <property name="dataSource" ref="dataSource" />
-        <property name="transactionManager" ref="transactionManager" />
-        <property name="databaseType" value="mysql" />
-    </bean>
-  	
-    <bean id="jobLauncher"
-          class="org.springframework.batch.core.launch.support.SimpleJobLauncher">
-        <property name="jobRepository" ref="jobRepository" />
-    </bean>
-  	
-    <bean id="transactionManager"
-          class="org.springframework.batch.support.transaction.ResourcelessTransactionManager" />
+	http://www.springframework.org/schema/jdbc/spring-jdbc.xsd">   
 	
 	
     <bean id="dataSource"
@@ -47,11 +32,51 @@
         <property name="username" value="root" />
         <property name="password" value="" />
     </bean>
+    
+    <bean id="sessionFactory" class="org.springframework.orm.hibernate4.LocalSessionFactoryBean">
+        <property name="dataSource" ref="dataSource" />
+        <property name="annotatedClasses">
+            <list>
+                <value>com.spring.batch.User</value>
+            </list>
+        </property>
+        <property name="hibernateProperties">
+            <props>
+                <prop key="hibernate.dialect">org.hibernate.dialect.MySQLDialect</prop>
+                <prop key="hibernate.show_sql">true</prop>
+            </props>
+        </property>
+    </bean>
+    
+    <!-- Transaction Manager Declaration -->
+    <bean id="transactionManager" class="org.springframework.orm.hibernate4.HibernateTransactionManager">
+        <property name="sessionFactory" ref="sessionFactory"/>
+    </bean>
+    
+    <!--    <bean id="transactionManager"
+    class="org.springframework.batch.support.transaction.ResourcelessTransactionManager" />-->
+    
+    <bean id="jobRepository"
+          class="org.springframework.batch.core.repository.support.JobRepositoryFactoryBean">
+        <property name="dataSource" ref="dataSource" />
+        <property name="transactionManager" ref="transactionManager" />
+        <property name="databaseType" value="mysql" />
+    </bean>
+    
+    <bean id="jobLauncher"
+          class="org.springframework.batch.core.launch.support.SimpleJobLauncher">
+        <property name="jobRepository" ref="jobRepository" />
+    </bean>
   
-    <bean id="user" class="com.javacodegeeks.example.utils.User" scope="prototype"/>
+    <bean id="user" class="com.spring.batch.User" scope="prototype"/>
   
-   
-	
+    <bean id="userDAO" class="com.spring.batch.UserDAO">
+        <property name="sessionFactory" ref="sessionFactory" />
+    </bean>
+    <!-- User Service Declaration -->
+    <bean id="userService" class="com.spring.batch.UserService">
+        <property name="userDAO" ref="userDAO" />
+    </bean>	
 	
     <!-- Read data from the csv file-->
     <bean id="itemReader" class="org.springframework.batch.item.file.FlatFileItemReader">
@@ -72,22 +97,25 @@
             </bean>
         </property>
     </bean>
+    
+    <bean id="itemProcessor" class="com.spring.batch.TestProcessor" />
 	
-    <!-- Write data into a database table named: STUDENT_DATA -->
+    <!-- Write data into a database table named: user -->
     <bean id="itemWriter" class="org.springframework.batch.item.database.JdbcBatchItemWriter">
         <property name="dataSource" ref="dataSource"></property>
         <property name="sql">
             <value>
-               <![CDATA[
-            	insert into user(name,password)
-			values (:name, :password)
-            ]]>
+               <![CDATA[insert into user(name,password) values (:name, :password)]]>
             </value>
         </property>
         <property name="itemSqlParameterSourceProvider">
             <bean class="org.springframework.batch.item.database.BeanPropertyItemSqlParameterSourceProvider"/>
         </property>
-    </bean>   
+    </bean>
+    
+<!--    <bean id="itemWriter" class="com.spring.batch.TestWriter" >
+        <property name="userService" ref="userService"/>
+    </bean>     -->
    
     <!--  This is to make use of the spring provided test launcher -->
     <bean class="org.springframework.batch.test.JobLauncherTestUtils"/>
@@ -95,14 +123,14 @@
     <job id="batchJob" xmlns="http://www.springframework.org/schema/batch">
         <step id="batchStep">
             <tasklet allow-start-if-complete="true">
-                <chunk reader="itemReader" writer="itemWriter" commit-interval="2"></chunk>
+                <chunk reader="itemReader" processor="itemProcessor" writer="itemWriter" commit-interval="5"></chunk>
             </tasklet>
         </step>
     </job>
   
     <jdbc:initialize-database data-source="dataSource">
-	<jdbc:script location="org/springframework/batch/core/schema-drop-mysql.sql" />
-	<jdbc:script location="org/springframework/batch/core/schema-mysql.sql" />
-  </jdbc:initialize-database>
+        <jdbc:script location="org/springframework/batch/core/schema-drop-mysql.sql" />
+        <jdbc:script location="org/springframework/batch/core/schema-mysql.sql" />
+    </jdbc:initialize-database>
 	
 </beans>	
