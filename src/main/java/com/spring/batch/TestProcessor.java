@@ -6,6 +6,7 @@ public class TestProcessor implements ItemProcessor<User, User>  {
     public User process(User user) throws Exception {
         user.setName(user.getName().toUpperCase());
         user.setPassword(user.getPassword().toUpperCase());
+        //System.out.println(user.getName());
         return user;
     }
 }

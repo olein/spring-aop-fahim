@@ -98,6 +98,31 @@
         </property>
     </bean>
     
+    <!-- Read data from another csv file-->
+    <bean id="itemReader2" class="org.springframework.batch.item.file.FlatFileItemReader">
+        <property name="resource" value="user2.csv"></property>
+        <property name="linesToSkip" value="1"></property>
+        <property name="lineMapper">
+            <bean class="org.springframework.batch.item.file.mapping.DefaultLineMapper">
+                <property name="lineTokenizer">
+                    <bean class="org.springframework.batch.item.file.transform.DelimitedLineTokenizer">
+                        <property name="names" value="name,password"></property>
+                    </bean>
+                </property>
+                <property name="fieldSetMapper">
+                    <bean class="org.springframework.batch.item.file.mapping.BeanWrapperFieldSetMapper">
+                        <property name="prototypeBeanName" value="user"></property>
+                    </bean>
+                </property>
+            </bean>
+        </property>
+    </bean>
+    
+    <!--    custom reader-->
+    <bean id="listReader" class="com.spring.batch.ListReader" >       
+    </bean>
+    
+    <!--    processor-->
     <bean id="itemProcessor" class="com.spring.batch.TestProcessor" />
 	
     <!-- Write data into a database table named: user -->
@@ -111,19 +136,65 @@
         <property name="itemSqlParameterSourceProvider">
             <bean class="org.springframework.batch.item.database.BeanPropertyItemSqlParameterSourceProvider"/>
         </property>
+    </bean>    
+    
+    <!-- Write data into a database table named: user -->
+    <bean id="itemWriter2" class="org.springframework.batch.item.database.JdbcBatchItemWriter">
+        <property name="dataSource" ref="dataSource"></property>
+        <property name="sql">
+            <value>
+               <![CDATA[insert into user(name,password) values (:name, :password)]]>
+            </value>
+        </property>
+        <property name="itemSqlParameterSourceProvider">
+            <bean class="org.springframework.batch.item.database.BeanPropertyItemSqlParameterSourceProvider"/>
+        </property>
     </bean>
     
-<!--    <bean id="itemWriter" class="com.spring.batch.TestWriter" >
+    <!--    write data using hibernate-->
+    <!--    <bean id="itemWriter" class="com.spring.batch.TestWriter" >
         <property name="userService" ref="userService"/>
     </bean>     -->
    
     <!--  This is to make use of the spring provided test launcher -->
     <bean class="org.springframework.batch.test.JobLauncherTestUtils"/>
- 
+    
+    <bean id="taskExecutor" class="org.springframework.core.task.SimpleAsyncTaskExecutor"/>
+    
+    <!--    run a single job-->
+    <!--    <job id="batchJob" xmlns="http://www.springframework.org/schema/batch">
+        <step id="batchStep">
+            <tasklet allow-start-if-complete="true" task-executor="taskExecutor">
+                <chunk reader="itemReader" processor="itemProcessor" writer="itemWriter" commit-interval="5"></chunk>
+            </tasklet>
+        </step>
+    </job> -->
+    
+    <!--    parallel job execution-->
+    <!--    <job id="batchJob" xmlns="http://www.springframework.org/schema/batch">
+        <split id="splitFlow1" task-executor="taskExecutor">
+            <flow>
+                <step id="batchStep">
+                    <tasklet allow-start-if-complete="true" task-executor="taskExecutor">
+                        <chunk reader="itemReader" processor="itemProcessor" writer="itemWriter" commit-interval="1"></chunk>
+                    </tasklet>
+                </step>                
+            </flow>
+            <flow>
+                <step id="batchStep2">
+                    <tasklet allow-start-if-complete="true" task-executor="taskExecutor">
+                        <chunk reader="itemReader2" processor="itemProcessor" writer="itemWriter2" commit-interval="1"></chunk>
+                    </tasklet>
+                </step>
+            </flow>
+        </split>        
+    </job>  -->
+    
+    <!--    write data using custom reader-->
     <job id="batchJob" xmlns="http://www.springframework.org/schema/batch">
         <step id="batchStep">
-            <tasklet allow-start-if-complete="true">
-                <chunk reader="itemReader" processor="itemProcessor" writer="itemWriter" commit-interval="5"></chunk>
+            <tasklet>
+                <chunk reader="listReader" processor="itemProcessor" writer="itemWriter" commit-interval="4"></chunk>
             </tasklet>
         </step>
     </job>
@@ -131,6 +202,6 @@
     <jdbc:initialize-database data-source="dataSource">
         <jdbc:script location="org/springframework/batch/core/schema-drop-mysql.sql" />
         <jdbc:script location="org/springframework/batch/core/schema-mysql.sql" />
-    </jdbc:initialize-database>
-	
+    </jdbc:initialize-database>	
+    
 </beans>	
