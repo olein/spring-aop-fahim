@@ -1,108 +1,30 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <beans xmlns="http://www.springframework.org/schema/beans"
-       xmlns:aop="http://www.springframework.org/schema/aop" 
-       xmlns:batch="http://www.springframework.org/schema/batch" xmlns:task="http://www.springframework.org/schema/task"
-       xmlns:file="http://www.springframework.org/schema/integration/file"	
-       xmlns:p="http://www.springframework.org/schema/p" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
-       xmlns:context="http://www.springframework.org/schema/context"
-       xmlns:jdbc="http://www.springframework.org/schema/jdbc"
-       xmlns:util="http://www.springframework.org/schema/util"
-       xsi:schemaLocation="http://www.springframework.org/schema/beans	
-	http://www.springframework.org/schema/beans/spring-beans.xsd 	
-	http://www.springframework.org/schema/integration/file 
-	http://www.springframework.org/schema/integration/file/spring-integration-file.xsd
-    http://www.springframework.org/schema/beans 
-    http://www.springframework.org/schema/beans/spring-beans.xsd
-    http://www.springframework.org/schema/batch 
-    http://www.springframework.org/schema/batch/spring-batch.xsd
-    http://www.springframework.org/schema/context 
-    http://www.springframework.org/schema/context/spring-context.xsd 	
-	http://www.springframework.org/schema/util 
-	http://www.springframework.org/schema/util/spring-util.xsd
-	http://www.springframework.org/schema/task
-    http://www.springframework.org/schema/task/spring-task.xsd
-    http://www.springframework.org/schema/jdbc 
-	http://www.springframework.org/schema/jdbc/spring-jdbc.xsd">
-	
-    <bean id="jobRepository"
-          class="org.springframework.batch.core.repository.support.JobRepositoryFactoryBean">
-        <property name="dataSource" ref="dataSource" />
-        <property name="transactionManager" ref="transactionManager" />
-        <property name="databaseType" value="mysql" />
+       xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+       xmlns:aop="http://www.springframework.org/schema/aop"
+       xsi:schemaLocation="http://www.springframework.org/schema/beans http://www.springframework.org/schema/beans/spring-beans.xsd
+		http://www.springframework.org/schema/aop http://www.springframework.org/schema/aop/spring-aop-4.0.xsd" xmlns:context="http://www.springframework.org/schema/context">
+
+    <!-- Enable AspectJ style of Spring AOP -->
+    <aop:aspectj-autoproxy />
+    <context:annotation-config></context:annotation-config>
+    <context:component-scan base-package="com.spring.aop"></context:component-scan>
+
+    <!-- Configure Employee Bean and initialize it -->
+    <bean name="employee" class="com.spring.aop.Employee">
+        <property name="name" value="Dummy Name"></property>
     </bean>
-  	
-    <bean id="jobLauncher"
-          class="org.springframework.batch.core.launch.support.SimpleJobLauncher">
-        <property name="jobRepository" ref="jobRepository" />
+
+    <!-- Configure EmployeeService bean -->
+    <bean name="employeeService" class="com.spring.aop.EmployeeService">
+        <property name="employee" ref="employee"></property>
     </bean>
-  	
-    <bean id="transactionManager"
-          class="org.springframework.batch.support.transaction.ResourcelessTransactionManager" />
-	
-	
-    <bean id="dataSource"
-          class="org.springframework.jdbc.datasource.DriverManagerDataSource">
-        <property name="driverClassName" value="com.mysql.jdbc.Driver" />
-        <property name="url" value="jdbc:mysql://localhost:3306/rev_eng?zeroDateTimeBehavior=convertToNull" />
-        <property name="username" value="root" />
-        <property name="password" value="" />
-    </bean>
-  
-    <bean id="student" class="com.javacodegeeks.example.utils.StudentModel" scope="prototype"/>
-  
-   
-	
-	
-    <!-- Read data from the csv file-->
-    <bean id="itemReader" class="org.springframework.batch.item.file.FlatFileItemReader">
-        <property name="resource" value="studentData.csv"></property>
-        <property name="linesToSkip" value="1"></property>
-        <property name="lineMapper">
-            <bean class="org.springframework.batch.item.file.mapping.DefaultLineMapper">
-                <property name="lineTokenizer">
-                    <bean class="org.springframework.batch.item.file.transform.DelimitedLineTokenizer">
-                        <property name="names" value="firstName,lastName,school,rollNumber"></property>
-                    </bean>
-                </property>
-                <property name="fieldSetMapper">
-                    <bean class="org.springframework.batch.item.file.mapping.BeanWrapperFieldSetMapper">
-                        <property name="prototypeBeanName" value="student"></property>
-                    </bean>
-                </property>
-            </bean>
-        </property>
-    </bean>
-	
-    <!-- Write data into a database table named: STUDENT_DATA -->
-    <bean id="itemWriter" class="org.springframework.batch.item.database.JdbcBatchItemWriter">
-        <property name="dataSource" ref="dataSource"></property>
-        <property name="sql">
-            <value>
-               <![CDATA[
-            	insert into user(name,password)
-			values (:firstName, :lastName)
-            ]]>
-            </value>
-        </property>
-        <property name="itemSqlParameterSourceProvider">
-            <bean class="org.springframework.batch.item.database.BeanPropertyItemSqlParameterSourceProvider"/>
-        </property>
-    </bean>   
-   
-    <!--  This is to make use of the spring provided test launcher -->
-    <bean class="org.springframework.batch.test.JobLauncherTestUtils"/>
- 
-    <job id="batchJob" xmlns="http://www.springframework.org/schema/batch">
-        <step id="batchStep">
-            <tasklet allow-start-if-complete="true">
-                <chunk reader="itemReader" writer="itemWriter" commit-interval="2"></chunk>
-            </tasklet>
-        </step>
-    </job>
-  
-    <jdbc:initialize-database data-source="dataSource">
-	<jdbc:script location="org/springframework/batch/core/schema-drop-mysql.sql" />
-	<jdbc:script location="org/springframework/batch/core/schema-mysql.sql" />
-  </jdbc:initialize-database>
-	
-</beans>	
+
+    <!-- Configure Aspect Beans, without this Aspects advices wont execute -->
+    <!--    <bean name="employeeAspect" class="com.spring.aop.EmployeeAspect" />-->
+    <bean name="employeeAfterAspect" class="com.spring.aop.EmployeeAfterAspect" />
+    <!--<bean name="employeeAroundAspect" class="com.spring.aop.EmployeeAroundAspect" />-->
+    <!--   <bean name="employeeAspectPointcut" class="com.spring.aop.EmployeeAspectPointcut" />-->
+    <!--    <bean name="employeeAspectJoinPoint" class="com.spring.aop.EmployeeAspectJoinPoint" />  -->
+
+</beans>
